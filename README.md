@@ -1,3 +1,9 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
 # User Guide for Shiny Application
 
 ## Introduction
@@ -41,14 +47,11 @@ The files you need in your directory are :
 **clinvar_20210828_gencode_chromosomes.vcf.gz**
 **clinvar_20210828_gencode_chromosomes.vcf.gz.tbi**
 
--   The data file containing the counts of CCLE & Gtex for each contig
-    (1st column : the contig's tag) :
+-   The data file containing the counts of CCLE & Gtex for each contig :
 
 **reads_counts_cancer_Gtex.fst**
 
--   The quantiles file containing the tags as 1st column and the
-    quantiles of CCLE and Gtex (column pattern : "all_XXperct_CCLE" /
-    "all_XXperct_Gtex") :
+-   The quantiles file containing the quantiles of CCLE and Gtex :
 
 **cancer_normal_quantiles.fst**
 
