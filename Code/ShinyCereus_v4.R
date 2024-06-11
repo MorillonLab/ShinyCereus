@@ -710,7 +710,7 @@ server <- function(input, output, session) {
             if (length(recurrence_patients_numeric) > 0) {
               max_recurrence_patients <- max(recurrence_patients_numeric)
               choices_recurrence_patients <- c("all", seq(1, max_recurrence_patients, 1))
-              selected_recurrence_patients <- "all"
+              selected_recurrence_patients <- ceiling(max(my_data[, grep("recurrence", grep("patients", names(my_data), value = TRUE), value = TRUE)])/2)
             } else {
               choices_recurrence_patients <- "no patients data"
               selected_recurrence_patients <- "no patients data"
@@ -732,9 +732,9 @@ server <- function(input, output, session) {
                           selectInput("recurrence_CCLE_filter", "Min authorized recurrence in cancer cell lines",choices = c("all",seq(1,max(my_data[,grep("recurrence",grep("CCLE",names(my_data),value=T),value=T)]),1)),selected=max(my_data[,grep("recurrence",grep("CCLE",names(my_data),value=T),value=T)]),multiple =F),
                           selectInput("recurrence_patients_filter", "Min authorized recurrence in patients", choices = choices_recurrence_patients, selected = selected_recurrence_patients, multiple = F),
                           selectInput("recurrence_Gtex_filter", "Max authorized recurrence in Gtex",choices = c("all",seq(0,max(my_data[,grep("recurrence",grep("Gtex",names(my_data),value=T),value=T)]),1)),selected=max(my_data[,grep("recurrence",grep("Gtex",names(my_data),value=T),value=T)]),multiple =F),
-                          selectInput("perct_filter_CCLE", "Select at least X % perct cancer cell lines samples to be higher than Gtex",choices = names(cancer_normal_quantiles)[grepl("CCLE",names(cancer_normal_quantiles))],selected="all_95perct_CCLE",multiple =F),
+                          selectInput("perct_filter_CCLE", "Select at least X % perct cancer cell lines samples to be higher than Gtex",choices = names(cancer_normal_quantiles)[grepl("cancer",names(cancer_normal_quantiles))],selected="all_99perct_cancer",multiple =F),
                           selectInput("perct_filter_Gtex", "Select at least X % perct Gtex samples to be lower than cancer",choices = names(cancer_normal_quantiles)[grepl("Gtex",names(cancer_normal_quantiles))],selected="all_99perct_Gtex",multiple =F),
-                          selectInput("perct_filter_patients", "Select at least X % perct patients samples to be higher than Gtex",choices = names(patients_quantiles)[grepl("patients",names(patients_quantiles))],selected="all_95perct_patients",multiple =F),
+                          selectInput("perct_filter_patients", "Select at least X % perct patients samples to be higher than Gtex",choices = names(patients_quantiles)[grepl("patients",names(patients_quantiles))],selected="all_99perct_patients",multiple =F),
                           actionButton("applyCustomFilters", HTML("Click to apply custom filters"),icon("paper-plane"),style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                           bsButton("applyNeoFilters", "Click to add Neo filters",icon("paper-plane"))
 
@@ -743,7 +743,7 @@ server <- function(input, output, session) {
           
         })
 
-          
+        
         #give to UI panel for the body
         output$scatterplot_panel <- renderUI({
           div(
@@ -1081,143 +1081,146 @@ server <- function(input, output, session) {
         
         observeEvent(c(input$applyCustomFilters),{
           
-          #if original dataframe exists, apply filters
-          #if(is.data.frame(refined_table)){
+          if(input$applyCustomFilters!=0) {
           
-          updateButton(session,"applyNeoFilters",label="Click to add Neo filters")
-          
-          tmp_table1<-my_data[which(my_data$contig_length>=as.numeric(input$length_filter)),]
-          
-          vals$refined_table<-tmp_table1
-          
-          
-          if(input$splice_filter=="only_spliced"){
+            #if original dataframe exists, apply filters
+            #if(is.data.frame(refined_table)){
             
-            tmp_table1<-tmp_table1[which(tmp_table1$nb_splice>=1),]
+            updateButton(session,"applyNeoFilters",label="Click to add Neo filters")
             
-          }else if(input$splice_filter=="not_spliced"){
+            tmp_table1<-my_data[which(my_data$contig_length>=as.numeric(input$length_filter)),]
             
-            tmp_table1<-tmp_table1[which(tmp_table1$nb_splice==0),]
+            vals$refined_table<-tmp_table1
             
-          }
-          vals$refined_table<-tmp_table1
-          
-          
-          if(input$multihit_filter=="multihit_only"){
             
-            tmp_table1<-tmp_table1[which(tmp_table1$nb_hit>1),]
-            
-          }else if(input$multihit_filter=="single_hit"){
-            
-            tmp_table1<-tmp_table1[which(tmp_table1$nb_hit==1),]
-            
-          }
-          
-          vals$refined_table<-tmp_table1
-          
-          #patients
-          if (!is.null(my_data$recurrence_patients)) {
-          #if (length(grep("recurrence", grep("patients", names(my_data), value = TRUE), value = TRUE)) > 0) {
-          #if ("recurrence_patients" %in% colnames(my_data)) {
-            if(input$recurrence_patients_filter!="all"){
+            if(input$splice_filter=="only_spliced"){
               
-              tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=as.numeric(input$recurrence_patients_filter)),]
+              tmp_table1<-tmp_table1[which(tmp_table1$nb_splice>=1),]
+              
+            }else if(input$splice_filter=="not_spliced"){
+              
+              tmp_table1<-tmp_table1[which(tmp_table1$nb_splice==0),]
+              
+            }
+            vals$refined_table<-tmp_table1
+            
+            
+            if(input$multihit_filter=="multihit_only"){
+              
+              tmp_table1<-tmp_table1[which(tmp_table1$nb_hit>1),]
+              
+            }else if(input$multihit_filter=="single_hit"){
+              
+              tmp_table1<-tmp_table1[which(tmp_table1$nb_hit==1),]
+              
+            }
+            
+            vals$refined_table<-tmp_table1
+            
+            #patients
+            if (!is.null(my_data$recurrence_patients)) {
+            #if (length(grep("recurrence", grep("patients", names(my_data), value = TRUE), value = TRUE)) > 0) {
+            #if ("recurrence_patients" %in% colnames(my_data)) {
+              if(input$recurrence_patients_filter!="all"){
+                
+                tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=as.numeric(input$recurrence_patients_filter)),]
+                
+              }else{
+                
+                tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=max(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)])),]
+              }
+              vals$refined_table<-tmp_table1
+            }
+            
+            
+            
+            # if(input$recurrence_patients_filter!="all"){
+            #   
+            #   
+            #   tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=as.numeric(input$recurrence_patients_filter)),]
+            #   
+            # }else{
+            #   
+            #   tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=max(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)])),]
+            # }
+            
+            
+            
+            if(input$recurrence_CCLE_filter!="all"){
+  
+  
+              tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)]>=as.numeric(input$recurrence_CCLE_filter)),]
+  
+            }else{
+  
+              tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)]>=max(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)])),]
+            }
+  
+            vals$refined_table<-tmp_table1
+            
+            
+            
+            if(input$recurrence_Gtex_filter!="all"){
+              
+              tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("Gtex",names(tmp_table1),value=T),value=T)]<=as.numeric(input$recurrence_Gtex_filter)),]
               
             }else{
               
-              tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=max(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)])),]
+              tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)]<1e100),]
             }
-            vals$refined_table<-tmp_table1
-          }
-          
-          
-          
-          # if(input$recurrence_patients_filter!="all"){
-          #   
-          #   
-          #   tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=as.numeric(input$recurrence_patients_filter)),]
-          #   
-          # }else{
-          #   
-          #   tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)]>=max(tmp_table1[,grep("recurrence",grep("patients",names(tmp_table1),value=T),value=T)])),]
-          # }
-          
-          
-          
-          if(input$recurrence_CCLE_filter!="all"){
-
-
-            tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)]>=as.numeric(input$recurrence_CCLE_filter)),]
-
-          }else{
-
-            tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)]>=max(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)])),]
-          }
-
-          vals$refined_table<-tmp_table1
-          
-          
-          
-          if(input$recurrence_Gtex_filter!="all"){
-            
-            tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("Gtex",names(tmp_table1),value=T),value=T)]<=as.numeric(input$recurrence_Gtex_filter)),]
-            
-          }else{
-            
-            tmp_table1<-tmp_table1[which(tmp_table1[,grep("recurrence",grep("CCLE",names(tmp_table1),value=T),value=T)]<1e100),]
-          }
-          
-          vals$refined_table<-tmp_table1
-          
-          #Filter for (X % CCLE > X % Gtex) && (X % patients > X % Gtex)
-          selected_quantiles_cancer<-as.character(cancer_normal_quantiles[which(cancer_normal_quantiles[,input$perct_filter_CCLE]>cancer_normal_quantiles[,input$perct_filter_Gtex] ),]$tag)
-          
-          if (nrow(patients_quantiles) == 0) {
-            selected_quantiles <- selected_quantiles_cancer
-          } else {
-            selected_quantiles_patients<-as.character(patients_quantiles[which(patients_quantiles[,input$perct_filter_patients]>cancer_normal_quantiles[,input$perct_filter_Gtex]),]$tag)
-            selected_quantiles <- intersect (selected_quantiles_cancer, selected_quantiles_patients)
-          }
-          # selected_quantiles_patients<-as.character(patients_quantiles[which(patients_quantiles[,input$perct_filter_patients]>cancer_normal_quantiles[,input$perct_filter_Gtex]),]$tag)
-          # selected_quantiles <- intersect (selected_quantiles_cancer, selected_quantiles_patients)
-          
-          tmp_table1<-tmp_table1[which(tmp_table1$tag%in%selected_quantiles),]
-          
-          vals$refined_table<-tmp_table1
-          
-          if(any(as.character(unlist(input$gene_name_filter))%in%c("all"))==F){
-            
-            
-            tmp_table1<-tmp_table1[which(tmp_table1$gene_symbol%in%c(as.character(unlist(input$gene_name_filter)))),]
-            
-          }
-          
-          vals$refined_table<-tmp_table1
-
-          
-          
-          
-          #filter on wanted min samples in cancer
-          
-          if(any(as.character(unlist(input$cell_line_filter))%in%c("any"))==F){
-            
-            sample_order_selected<-sample_order[which(sample_order$sample_name%in%as.character(unlist(input$cell_line_filter))),]
-            
-            reads_counts_cancer_Gtex_subset<-reads_counts_cancer_Gtex[,c(1,sample_order_selected$sample_order+1)]
-            
-            selected_expression_in_samples<-as.character(reads_counts_cancer_Gtex_subset[apply(reads_counts_cancer_Gtex_subset[,2:ncol(reads_counts_cancer_Gtex_subset)], 1, function(row) any(row >0 )),]$tag)
-            
-            tmp_table1<-tmp_table1[which(tmp_table1$tag%in%selected_expression_in_samples),]
-            
-            
             
             vals$refined_table<-tmp_table1
             
+            #Filter for (X % CCLE > X % Gtex) && (X % patients > X % Gtex)
+            selected_quantiles_cancer<-as.character(cancer_normal_quantiles[which(cancer_normal_quantiles[,input$perct_filter_CCLE]>cancer_normal_quantiles[,input$perct_filter_Gtex] ),]$tag)
             
+            if (nrow(patients_quantiles) == 0) {
+              selected_quantiles <- selected_quantiles_cancer
+            } else {
+              selected_quantiles_patients<-as.character(patients_quantiles[which(patients_quantiles[,input$perct_filter_patients]>cancer_normal_quantiles[,input$perct_filter_Gtex]),]$tag)
+              selected_quantiles <- intersect (selected_quantiles_cancer, selected_quantiles_patients)
+            }
+            # selected_quantiles_patients<-as.character(patients_quantiles[which(patients_quantiles[,input$perct_filter_patients]>cancer_normal_quantiles[,input$perct_filter_Gtex]),]$tag)
+            # selected_quantiles <- intersect (selected_quantiles_cancer, selected_quantiles_patients)
+            
+            tmp_table1<-tmp_table1[which(tmp_table1$tag%in%selected_quantiles),]
+            
+            vals$refined_table<-tmp_table1
+            
+            if(any(as.character(unlist(input$gene_name_filter))%in%c("all"))==F){
+              
+              
+              tmp_table1<-tmp_table1[which(tmp_table1$gene_symbol%in%c(as.character(unlist(input$gene_name_filter)))),]
+              
+            }
+            
+            vals$refined_table<-tmp_table1
+  
+            
+            
+            
+            #filter on wanted min samples in cancer
+            
+            if(any(as.character(unlist(input$cell_line_filter))%in%c("any"))==F){
+              
+              sample_order_selected<-sample_order[which(sample_order$sample_name%in%as.character(unlist(input$cell_line_filter))),]
+              
+              reads_counts_cancer_Gtex_subset<-reads_counts_cancer_Gtex[,c(1,sample_order_selected$sample_order+1)]
+              
+              selected_expression_in_samples<-as.character(reads_counts_cancer_Gtex_subset[apply(reads_counts_cancer_Gtex_subset[,2:ncol(reads_counts_cancer_Gtex_subset)], 1, function(row) any(row >0 )),]$tag)
+              
+              tmp_table1<-tmp_table1[which(tmp_table1$tag%in%selected_expression_in_samples),]
+              
+              
+              
+              vals$refined_table<-tmp_table1
+              
+              
+            }
+            
+            #}
           }
-          
-          #}
-          
+            
         })
         
         
