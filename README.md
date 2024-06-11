@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Welcome to this Shiny application for contig data analysis. This
+Welcome to this Shiny application for contig data visualization and analysis. This
 application allows you to filter contigs of your interest, visualize
 their expression in different conditions and get more informations about
 them.
